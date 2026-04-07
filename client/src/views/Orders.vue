@@ -27,6 +27,36 @@
         </div>
       </div>
 
+      <div class="card" v-if="restockingOrders.length > 0">
+        <div class="card-header">
+          <h3 class="card-title">{{ t('orders.restockingOrders') }} ({{ restockingOrders.length }})</h3>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>{{ t('orders.table.orderNumber') }}</th>
+                <th>{{ t('orders.table.items') }}</th>
+                <th>{{ t('orders.table.totalValue') }}</th>
+                <th>{{ t('orders.table.status') }}</th>
+                <th>{{ t('orders.table.orderDate') }}</th>
+                <th>{{ t('orders.table.expectedDelivery') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="order in restockingOrders" :key="order.id">
+                <td><strong>{{ order.order_number }}</strong></td>
+                <td>{{ order.items.length }} {{ t('common.items') }}</td>
+                <td><strong>{{ currencySymbol }}{{ order.total_cost.toLocaleString() }}</strong></td>
+                <td><span class="badge warning">{{ t('status.processing') }}</span></td>
+                <td>{{ formatDate(order.order_date) }}</td>
+                <td>{{ formatDate(order.expected_delivery) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       <div class="card">
         <div class="card-header">
           <h3 class="card-title">{{ t('orders.allOrders') }} ({{ orders.length }})</h3>
@@ -95,6 +125,7 @@ export default {
     const loading = ref(true)
     const error = ref(null)
     const orders = ref([])
+    const restockingOrders = ref([])
 
     // Use shared filters
     const {
@@ -117,6 +148,12 @@ export default {
           const dateB = new Date(b.order_date)
           return dateA - dateB
         })
+        try {
+          const fetchedRestocking = await api.getRestockingOrders()
+          restockingOrders.value = fetchedRestocking
+        } catch (e) {
+          // Restocking orders are optional, don't fail the whole page
+        }
       } catch (err) {
         error.value = 'Failed to load orders: ' + err.message
       } finally {
@@ -165,7 +202,8 @@ export default {
       formatDate,
       currencySymbol,
       translateProductName,
-      translateCustomerName
+      translateCustomerName,
+      restockingOrders
     }
   }
 }
